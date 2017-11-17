@@ -19,7 +19,6 @@ export class CounterComponent implements OnInit, OnDestroy {
 
     ngOnInit() {
         if (isPlatformBrowser(this.platformId)) {
-            this.timerSub = new Subscription();
             this.startTimer(10);
         }
     }
@@ -40,6 +39,7 @@ export class CounterComponent implements OnInit, OnDestroy {
             .timeInterval()
             .pluck('value')
             .take(seconds);
+        if (this.timerSub) this.timerSub.unsubscribe();
         this.timerSub = this.timer.subscribe(t => {
             console.log('Timer', t);
             if (t >= seconds - 1) {
