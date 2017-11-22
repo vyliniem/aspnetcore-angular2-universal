@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, OnInit, OnDestroy } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { Observable, Subscription } from 'rxjs/Rx';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 
@@ -14,12 +14,16 @@ export class CounterComponent implements OnInit, OnDestroy {
     private timerSub: Subscription;
 
     constructor(
-        @Inject(PLATFORM_ID) private platformId: Object
+        @Inject(PLATFORM_ID) private platformId: Object,
+        private zone: NgZone
     ) {}
 
     ngOnInit() {
         if (isPlatformBrowser(this.platformId)) {
-            this.startTimer(10);
+            this.zone.runOutsideAngular(() => {
+                NgZone.assertNotInAngularZone();
+                this.startTimer(10);
+            });
         }
     }
 
@@ -42,12 +46,14 @@ export class CounterComponent implements OnInit, OnDestroy {
         if (this.timerSub) this.timerSub.unsubscribe();
         this.timerSub = this.timer.subscribe(t => {
             console.log('Timer', t);
-            if (t >= seconds - 1) {
-                this.incrementCounter();
-                this.startTimer(seconds);
-            } else {
-                this.ticks--;
-            }
+            this.zone.run(() => {
+                if (t >= seconds - 1) {
+                    this.incrementCounter();
+                    this.startTimer(seconds);
+                } else {
+                    this.ticks--;
+                }    
+            });
         }, (err) => console.error('Timer error', err));
     }
 }
